@@ -28,6 +28,7 @@ public class Wallet {
     private User usuario;
 
     @Column(name = "saldo")
+    @JsonIgnore
     private Double saldo;
 
 }

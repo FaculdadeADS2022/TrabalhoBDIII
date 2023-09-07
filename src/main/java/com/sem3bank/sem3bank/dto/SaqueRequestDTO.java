@@ -6,7 +6,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class SaqueRequestDTO {
-    private Long idUsuario;
     private Double valorSaque;
 }
 

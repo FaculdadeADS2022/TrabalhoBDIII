@@ -1,5 +1,6 @@
 package com.sem3bank.sem3bank.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -22,6 +23,7 @@ public class Movimentation {
 
     @ManyToOne()
     @JoinColumn(name = "usuario")
+    @JsonIgnore
     private User usuario;
 
     @Enumerated(EnumType.STRING)

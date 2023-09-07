@@ -1,6 +1,7 @@
 package com.sem3bank.sem3bank.controller;
 
 import com.sem3bank.sem3bank.Listener.WalletListener;
+import com.sem3bank.sem3bank.config.JwtTokenUtil;
 import com.sem3bank.sem3bank.dto.DepositoRequestDTO;
 import com.sem3bank.sem3bank.dto.SaqueRequestDTO;
 import com.sem3bank.sem3bank.dto.TransferenciaRequestDTO;
@@ -9,13 +10,13 @@ import com.sem3bank.sem3bank.model.User;
 import com.sem3bank.sem3bank.model.Wallet;
 import com.sem3bank.sem3bank.repository.UserRepository;
 import com.sem3bank.sem3bank.repository.WalletRepository;
+import com.sem3bank.sem3bank.service.JwtUserDetailsService;
+import com.sem3bank.sem3bank.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
@@ -23,104 +24,189 @@ import java.util.Optional;
 @RequestMapping("/api/v1/carteira")
 public class WalletController {
 
-    @Autowired
-    private WalletRepository walletRepository;
+    private final WalletRepository walletRepository;
+    private final UserRepository userRepository;
+    private final WalletListener walletListener;
+    private final JwtTokenUtil jwtTokenUtil;
+    private final JwtUserDetailsService jwtUserDetailsService;
+    private final UserService userService;
 
     @Autowired
-    private UserRepository userRepository;
+    public WalletController(
+            WalletRepository walletRepository,
+            UserRepository userRepository,
+            WalletListener walletListener,
+            JwtTokenUtil jwtTokenUtil,
+            JwtUserDetailsService jwtUserDetailsService,
+            UserService userService
+    ) {
+        this.walletRepository = walletRepository;
+        this.userRepository = userRepository;
+        this.walletListener = walletListener;
+        this.jwtTokenUtil = jwtTokenUtil;
+        this.jwtUserDetailsService = jwtUserDetailsService;
+        this.userService = userService;
+    }
 
-    @Autowired
-    private WalletListener walletListener;
+    private User getUserFromToken(HttpServletRequest request) {
+        String jwtToken = extractJwtTokenFromRequest(request);
+
+        if (jwtToken != null) {
+            return userService.getUserFromToken(jwtToken);
+        }
+
+        return null;
+    }
+
+    @GetMapping("/saldo")
+    public ResponseEntity<String> obterSaldo(HttpServletRequest request) {
+        User user = getUserFromToken(request);
+
+        if (user != null) {
+            Optional<Wallet> walletOptional = userService.getUserWallet(user);
+
+            if (walletOptional.isPresent()) {
+                double saldo = walletOptional.get().getSaldo();
+                return ResponseEntity.ok(String.format("Seu saldo atual é de: R$%.2f", saldo));
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuário não possui uma carteira associada.");
+            }
+        }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido ou usuário não autorizado.");
+    }
 
     @PostMapping("/deposito")
-    public ResponseEntity<String> realizarDeposito(@RequestBody DepositoRequestDTO request) {
-        // Primeiro, obtenha o usuário pelo idUsuario
-        Optional<User> userOptional = userRepository.findById(request.getIdUsuario());
+    public ResponseEntity<String> realizarDeposito(HttpServletRequest request, @RequestBody DepositoRequestDTO requestDTO) {
+        User user = getUserFromToken(request);
 
-        if (userOptional.isPresent()) {
-            User user = userOptional.get();
+        if (user != null) {
+            Optional<User> userOptional = userRepository.findById(user.getId());
 
-            // Em seguida, obtenha a carteira do usuário
-            Wallet wallet = user.getCarteira();
+            if (userOptional.isPresent()) {
+                User currentUser = userOptional.get();
+                Wallet wallet = currentUser.getCarteira();
 
-            if (wallet != null) {
-                double novoSaldo = wallet.getSaldo() + request.getValorDeposito();
-                wallet.setSaldo(novoSaldo);
-                walletRepository.save(wallet);
+                if (wallet != null) {
+                    double valorDeposito = requestDTO.getValorDeposito();
+                    double novoSaldo = wallet.getSaldo() + valorDeposito;
+                    wallet.setSaldo(novoSaldo);
+                    walletRepository.save(wallet);
 
-                // Criar movimentação de depósito
-                walletListener.createMovimentation(wallet, TipoMovimentacao.DEPOSITO, request.getValorDeposito(), "Depósito na carteira");
+                    walletListener.createMovimentation(wallet, TipoMovimentacao.DEPOSITO, valorDeposito, "Depósito na carteira");
 
-                return ResponseEntity.ok("Depósito realizado com sucesso.");
+                    return ResponseEntity.ok("Depósito realizado com sucesso.");
+                } else {
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("O usuário não possui uma carteira associada.");
+                }
             } else {
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("O usuário não possui uma carteira associada.");
+                return ResponseEntity.notFound().build();
             }
-        } else {
-            return ResponseEntity.notFound().build();
         }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido ou usuário não autorizado.");
     }
 
     @PostMapping("/saque")
-    public ResponseEntity<String> realizarSaque(@RequestBody SaqueRequestDTO request) {
-        // Obtenha a carteira do usuário pelo idUsuario
-        Optional<Wallet> walletOptional = walletRepository.findById(request.getIdUsuario());
+    public ResponseEntity<String> realizarSaque(HttpServletRequest request, @RequestBody SaqueRequestDTO requestDTO) {
+        User user = getUserFromToken(request);
 
-        if (walletOptional.isPresent()) {
-            Wallet wallet = walletOptional.get();
-            double saldoAtual = wallet.getSaldo();
-            double valorSaque = request.getValorSaque();
+        if (user != null) {
+            Optional<Wallet> walletOptional = walletRepository.findById(user.getId());
 
-            if (saldoAtual >= valorSaque) {
-                double novoSaldo = saldoAtual - valorSaque;
-                wallet.setSaldo(novoSaldo);
-                walletRepository.save(wallet);
+            if (walletOptional.isPresent()) {
+                Wallet wallet = walletOptional.get();
+                double saldoAtual = wallet.getSaldo();
+                double valorSaque = requestDTO.getValorSaque();
 
-                // Criar movimentação de saque
-                walletListener.createMovimentation(wallet, TipoMovimentacao.SAQUE, valorSaque, "Saque da carteira");
+                if (saldoAtual >= valorSaque) {
+                    double novoSaldo = saldoAtual - valorSaque;
+                    wallet.setSaldo(novoSaldo);
+                    walletRepository.save(wallet);
 
-                return ResponseEntity.ok("Saque realizado com sucesso.");
+                    walletListener.createMovimentation(wallet, TipoMovimentacao.SAQUE, valorSaque, "Saque da carteira");
+
+                    return ResponseEntity.ok("Saque realizado com sucesso.");
+                } else {
+                    return ResponseEntity.badRequest().body("Saldo insuficiente.");
+                }
             } else {
-                return ResponseEntity.badRequest().body("Saldo insuficiente.");
+                return ResponseEntity.notFound().build();
             }
-        } else {
-            return ResponseEntity.notFound().build();
         }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido ou usuário não autorizado.");
     }
 
     @PostMapping("/transferencia")
-    public ResponseEntity<String> realizarTransferencia(@RequestBody TransferenciaRequestDTO request) {
-        // Obtenha as carteiras de origem e destino pelo idUsuario
-        Optional<Wallet> walletOrigemOptional = walletRepository.findById(request.getIdUsuarioOrigem());
-        Optional<Wallet> walletDestinoOptional = walletRepository.findById(request.getIdUsuarioDestino());
+    public ResponseEntity<String> realizarTransferencia(HttpServletRequest request, @RequestBody TransferenciaRequestDTO requestDTO) {
+        User user = getUserFromToken(request);
 
-        if (walletOrigemOptional.isPresent() && walletDestinoOptional.isPresent()) {
-            Wallet walletOrigem = walletOrigemOptional.get();
-            Wallet walletDestino = walletDestinoOptional.get();
-            double valorTransferencia = request.getValorTransferencia();
+        if (user != null) {
+            // Verificar se o usuário está tentando transferir para ele mesmo
+                if (user.getId() == requestDTO.getIdUsuarioDestino()) {
+                    return ResponseEntity.badRequest().body("Você não pode fazer uma transferência para você mesmo.");
+                }
 
-            if (walletOrigem.getSaldo() >= valorTransferencia) {
-                // Realize o saque na carteira de origem
-                double novoSaldoOrigem = walletOrigem.getSaldo() - valorTransferencia;
-                walletOrigem.setSaldo(novoSaldoOrigem);
-                walletRepository.save(walletOrigem);
+            Optional<Wallet> walletOrigemOptional = walletRepository.findById(user.getId());
+            Optional<Wallet> walletDestinoOptional = walletRepository.findById(requestDTO.getIdUsuarioDestino());
 
-                // Crie a movimentação de saída da transferência
-                walletListener.createMovimentation(walletOrigem, TipoMovimentacao.TRANSFERENCIA, valorTransferencia, "Transferência para outra carteira");
+            if (walletOrigemOptional.isPresent() && walletDestinoOptional.isPresent()) {
+                Wallet walletOrigem = walletOrigemOptional.get();
+                Wallet walletDestino = walletDestinoOptional.get();
+                User usuarioDestino = userRepository.findById(requestDTO.getIdUsuarioDestino()).get();
+                double valorTransferencia = requestDTO.getValorTransferencia();
 
-                // Realize o depósito na carteira de destino
-                double novoSaldoDestino = walletDestino.getSaldo() + valorTransferencia;
-                walletDestino.setSaldo(novoSaldoDestino);
-                walletRepository.save(walletDestino);
+                if (walletOrigem.getSaldo() >= valorTransferencia) {
+                    double novoSaldoOrigem = walletOrigem.getSaldo() - valorTransferencia;
+                    walletOrigem.setSaldo(novoSaldoOrigem);
+                    walletRepository.save(walletOrigem);
 
-                // Crie a movimentação de entrada da transferência
-                walletListener.createMovimentation(walletDestino, TipoMovimentacao.TRANSFERENCIA, valorTransferencia, "Transferência recebida de outra carteira");
+                    walletListener.createMovimentation(walletOrigem,
+                            TipoMovimentacao.TRANSFERENCIA,
+                            valorTransferencia,
+                            "Transferência realizada para carteira: " +
+                                    usuarioDestino.getCarteira().getId().toString() +
+                                    " - " +
+                                    usuarioDestino.getNome());
 
-                return ResponseEntity.ok("Transferência realizada com sucesso.");
+                    double novoSaldoDestino = walletDestino.getSaldo() + valorTransferencia;
+                    walletDestino.setSaldo(novoSaldoDestino);
+                    walletRepository.save(walletDestino);
+
+                    walletListener.createMovimentation(walletDestino,
+                            TipoMovimentacao.TRANSFERENCIA,
+                            valorTransferencia,
+                            "Transferência recebida da carteira: " +
+                                    user.getCarteira().getId().toString() +
+                                    " - " +
+                                    user.getNome());
+
+                    return ResponseEntity.ok("Transferência realizada com sucesso.");
+                } else {
+                    return ResponseEntity.badRequest().body("Saldo insuficiente para a transferência.");
+                }
             } else {
-                return ResponseEntity.badRequest().body("Saldo insuficiente para a transferência.");
+                if (walletOrigemOptional.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Carteira de origem não encontrada.");
+                } else if (walletDestinoOptional.isEmpty()) {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Carteira de destino não encontrada.");
+                }
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro inesperado.");
             }
-        } else {
-            return ResponseEntity.notFound().build();
         }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido ou usuário não autorizado.");
+    }
+
+
+    private String extractJwtTokenFromRequest(HttpServletRequest request) {
+        final String requestTokenHeader = request.getHeader("Authorization");
+
+        if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
+            return requestTokenHeader.substring(7);
+        }
+
+        return null;
     }
 }
