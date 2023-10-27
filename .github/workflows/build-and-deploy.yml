@@ -19,8 +19,7 @@ jobs:
     - name: Build .war
       run: |
         # Coloque aqui os comandos para construir o projeto .war
-        cd ../../
-        ./mvn clean package
+        mvn clean package
       working-directory: .
 
     - name: Build and push Docker image
