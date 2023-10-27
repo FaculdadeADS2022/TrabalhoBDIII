@@ -1,5 +1,6 @@
 FROM tomcat:latest
 
-RUN mkdir -p /usr/local/tomcat/webapps/sem3bank
+COPY target/*.war /usr/local/tomcat/webapps/
+COPY web.xml /usr/local/tomcat/conf/
 
-COPY sem3bank.war /usr/local/tomcat/webapps/sem3bank/
+CMD ["catalina.sh", "run"]

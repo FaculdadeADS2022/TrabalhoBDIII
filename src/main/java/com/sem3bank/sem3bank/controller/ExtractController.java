@@ -1,13 +1,9 @@
 package com.sem3bank.sem3bank.controller;
 
 import com.itextpdf.text.DocumentException;
-import com.sem3bank.sem3bank.config.JwtTokenUtil;
 import com.sem3bank.sem3bank.dto.ExtratoRequestDTO;
 import com.sem3bank.sem3bank.model.User;
-import com.sem3bank.sem3bank.repository.MovimentationRepository;
-import com.sem3bank.sem3bank.repository.UserRepository;
 import com.sem3bank.sem3bank.service.ExtractService;
-import com.sem3bank.sem3bank.service.JwtUserDetailsService;
 import com.sem3bank.sem3bank.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;

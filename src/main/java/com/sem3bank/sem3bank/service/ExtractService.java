@@ -4,11 +4,9 @@ import com.itextpdf.text.Document;
 import com.itextpdf.text.DocumentException;
 import com.itextpdf.text.Paragraph;
 import com.itextpdf.text.pdf.PdfWriter;
-import com.sem3bank.sem3bank.config.JwtTokenUtil;
 import com.sem3bank.sem3bank.model.Movimentation;
 import com.sem3bank.sem3bank.model.User;
 import com.sem3bank.sem3bank.repository.MovimentationRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

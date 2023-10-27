@@ -25,19 +25,15 @@ public class User {
     private String nome;
 
     @Column(name="email", nullable = false, length = 150, unique = true)
-    @JsonIgnore
     private String email;
 
     @Column(name="username", nullable = false)
-    @JsonIgnore
     private String username;
 
     @Column(name="senha", nullable = false, length = 100)
-    @JsonIgnore
     private String senha;
 
     @Column(name="cpf", nullable = false, length = 11)
-    @JsonIgnore
     private String cpf;
 
     @OneToOne()

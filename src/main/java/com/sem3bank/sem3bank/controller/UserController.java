@@ -1,5 +1,6 @@
 package com.sem3bank.sem3bank.controller;
 
+import com.sem3bank.sem3bank.dto.UsuariosDTO;
 import com.sem3bank.sem3bank.exception.ResourceNotFoundException;
 import com.sem3bank.sem3bank.model.User;
 import com.sem3bank.sem3bank.model.Wallet;
@@ -25,25 +26,27 @@ public class UserController {
     private WalletRepository walletRepository;
 
     @GetMapping("/usuarios")
-    public List<User> getAllUsers(){
-        return repository.findAll();
+    public List<UsuariosDTO> getAllUsers(){
+        List<User> user = repository.findAll();
+        return user.stream().map(UsuariosDTO::new).toList();
     }
     
     @GetMapping("/usuarios/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable(value = "id") Long userId) throws ResourceNotFoundException{
+    public ResponseEntity<UsuariosDTO> getUserById(@PathVariable(value = "id") Long userId) throws ResourceNotFoundException{
             User user = repository.findById(userId).orElseThrow(() ->
                     new ResourceNotFoundException("Usuário não encontrado para este ID: " + userId));
-            return ResponseEntity.ok().body(user);
+
+            return ResponseEntity.ok().body(new UsuariosDTO(user));
     }
     
     @GetMapping("/usuarios/email/{email}")
-    public ResponseEntity<User> getUserByEmail(@PathVariable(value = "email") String userEmail){
+    public ResponseEntity<UsuariosDTO> getUserByEmail(@PathVariable(value = "email") String userEmail){
         User user = repository.findByEmail(userEmail);
-        return ResponseEntity.ok().body(user);
+        return ResponseEntity.ok().body(new UsuariosDTO(user));
     }
 
     @PostMapping("/usuarios")
-    public User createUser(@Validated @RequestBody User user){
+    public ResponseEntity<UsuariosDTO> createUser(@Validated @RequestBody User user){
 
         //Cria carteira para o novo usuário.
             Wallet wallet = new Wallet();
@@ -53,11 +56,11 @@ public class UserController {
         //Define a carteira para o novo usuário.
             user.setCarteira(wallet);
 
-        return repository.save(user);
+        return ResponseEntity.ok().body(new UsuariosDTO(repository.save(user)));
     }
 
     @PutMapping("/usuarios/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable(value= "id") Long userId,
+    public ResponseEntity<UsuariosDTO> updateUser(@PathVariable(value= "id") Long userId,
                                            @Validated @RequestBody User detalhes)
         throws ResourceNotFoundException{
         User user = repository.findById(userId).orElseThrow(() ->
@@ -68,7 +71,7 @@ public class UserController {
         user.setCpf(detalhes.getCpf());
         user.setCarteira(detalhes.getCarteira());
         final User updateUser = repository.save(user);
-        return ResponseEntity.ok(updateUser);
+        return ResponseEntity.ok(new UsuariosDTO(updateUser));
     }
 
     @DeleteMapping("/usuarios/{id}")
@@ -79,7 +82,7 @@ public class UserController {
                 new ResourceNotFoundException("Usuario nao encontrado para este ID: " + userId));
         repository.delete(user);
         Map<String, Boolean> response = new HashMap<>();
-        response.put("deleted", Boolean.TRUE);
+        response.put("Usuário excluído!", Boolean.TRUE);
         return response;
     }
 }

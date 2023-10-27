@@ -10,7 +10,7 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class FileUploadService {
 
-    @Value("${fileio.api.url}")
+    @Value("${FILEIO_API_URL}")
     private String fileIoApiUrl;
 
     public String uploadFileAndGetPublicLink(byte[] fileBytes, String fileName) {

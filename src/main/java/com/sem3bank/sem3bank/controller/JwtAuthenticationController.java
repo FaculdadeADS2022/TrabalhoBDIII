@@ -1,6 +1,7 @@
 package com.sem3bank.sem3bank.controller;
 
 import com.sem3bank.sem3bank.config.JwtTokenUtil;
+import com.sem3bank.sem3bank.dto.UsuariosDTO;
 import com.sem3bank.sem3bank.model.JwtRequest;
 import com.sem3bank.sem3bank.model.JwtResponse;
 import com.sem3bank.sem3bank.model.User;
@@ -44,7 +45,7 @@ public class JwtAuthenticationController {
     }
 
     @RequestMapping(value = "/register", method = RequestMethod.POST)
-    public ResponseEntity<?> SaveUser(@RequestBody User user) throws Exception {
+    public ResponseEntity<UsuariosDTO> SaveUser(@RequestBody User user) throws Exception {
 
         //Cria carteira para o novo usuário.
             Wallet wallet = new Wallet();
@@ -54,11 +55,14 @@ public class JwtAuthenticationController {
         //Define a carteira para o novo usuário.
             user.setCarteira(wallet);
 
-        return ResponseEntity.ok(userDetailsService.save(user));
+        //Salva o usuário.
+            userDetailsService.save(user);
+
+        return ResponseEntity.ok(new UsuariosDTO(user));
     }
 
     @RequestMapping(value = "/authenticate", method = RequestMethod.POST)
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody JwtRequest request) throws Exception {
+    public ResponseEntity<JwtResponse> createAuthenticationToken(@RequestBody JwtRequest request) throws Exception {
         authenticate(request.getUsername(), request.getPassword());
         final UserDetails userDetails = userDetailsService.loadUserByUsername(request.getUsername());
         final String token = jwtTokenUtil.generateToken(userDetails);
