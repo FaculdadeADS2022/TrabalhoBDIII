@@ -9,6 +9,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/sem3bank
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: tomateseco
+      SPRING_JPA_SHOW_SQL: true
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.MySQL57Dialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      JWT_SECRET: secret
+      FILEIO_API_URL: https://file.io
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
