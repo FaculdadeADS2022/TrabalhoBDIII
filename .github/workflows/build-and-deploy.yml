@@ -9,13 +9,6 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    env:
-      DATABASE_URL: jdbc:mysql://db:3306/sem3bank
-      DATABASE_USERNAME: root
-      DATABASE_PASSWORD: tomateseco
-      JWT_SECRET: secret
-      FILEIO_API_URL: https://file.io
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
