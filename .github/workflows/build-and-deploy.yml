@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: Sem3Bank
 
     env:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/sem3bank
