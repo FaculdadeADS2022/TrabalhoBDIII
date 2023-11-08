@@ -10,17 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     environment: Sem3Bank
 
-    services:
-          db:
-            image: mysql:5.7
-            env:
-              MYSQL_USER: ${{ vars.MYSQL_USER }}
-              MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-              MYSQL_DATABASE: ${{ vars.MYSQL_DATABASE }}
-              MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
-            ports: 
-              - 3306:3306
-
     env:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/sem3bank
       SPRING_DATASOURCE_USERNAME: root
