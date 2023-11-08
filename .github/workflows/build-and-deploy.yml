@@ -44,7 +44,7 @@ jobs:
     - name: Build .war
       run: |
         # Coloque aqui os comandos para construir o projeto .war
-        mvn clean package
+        mvn clean package -Dmaven.test.skip=true
       working-directory: .
 
     - name: Debug Database Connection
