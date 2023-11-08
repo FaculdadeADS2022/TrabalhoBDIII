@@ -36,15 +36,6 @@ jobs:
         mvn clean package -Dmaven.test.skip=true
       working-directory: .
 
-    - name: Debug Database Connection
-      run: |
-        echo "Attempting to connect to the database..."
-        mysql -h db -u $SPRING_DATASOURCE_USERNAME -p$SPRING_DATASOURCE_PASSWORD -e "SELECT 1"
-        echo "Connected to the database successfully."
-      env:
-        SPRING_DATASOURCE_USERNAME: $SPRING_DATASOURCE_USERNAME
-        SPRING_DATASOURCE_PASSWORD: $SPRING_DATASOURCE_PASSWORD
-
     - name: Build and push Docker image
       run: |
         docker build -t Sem3Bank:latest -f .
