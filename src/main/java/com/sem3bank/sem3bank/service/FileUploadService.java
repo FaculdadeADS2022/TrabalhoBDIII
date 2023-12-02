@@ -21,6 +21,9 @@ public class FileUploadService {
 
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("file", new HttpEntity<>(fileBytes, headers));
+        headers.add("Authorization", "Bearer BEOHMYC.NA1Y16K-H63MWJ2-N331FYM-JYZQSFA");
+        body.add("expires", new HttpEntity<>("1d", headers));
+        body.add("maxDownloads", new HttpEntity<>("2", headers));
 
         HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
