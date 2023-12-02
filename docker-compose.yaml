@@ -20,6 +20,7 @@ services:
       - spring.jpa.hibernate.ddl-auto=update
       - JWT_SECRET=secret
       - FILEIO_API_URL=https://file.io
+      - FILEIO_API_KEY=BEOHMYC.NA1Y16K-H63MWJ2-N331FYM-JYZQSFA
 
     depends_on:
       - db
